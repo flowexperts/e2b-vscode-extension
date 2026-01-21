@@ -5,6 +5,9 @@ import { fileTreeProvider, FileItem } from '../providers/fileTreeProvider';
 import { createSandboxTerminal } from '../terminal/sandboxTerminal';
 import * as path from 'path';
 
+// Track terminals by sandbox ID
+const sandboxTerminals = new Map<string, vscode.Terminal[]>();
+
 export function registerCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand('e2b.setApiKey', setApiKeyCommand),
@@ -16,6 +19,23 @@ export function registerCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('e2b.newFile', newFileCommand),
     vscode.commands.registerCommand('e2b.newFolder', newFolderCommand),
     vscode.commands.registerCommand('e2b.deleteItem', deleteItemCommand),
+  );
+
+  // Track terminal closures to clean up our map
+  context.subscriptions.push(
+    vscode.window.onDidCloseTerminal((terminal) => {
+      // Remove closed terminal from all sandbox terminal lists
+      for (const [sandboxId, terminals] of sandboxTerminals.entries()) {
+        const index = terminals.indexOf(terminal);
+        if (index !== -1) {
+          terminals.splice(index, 1);
+          if (terminals.length === 0) {
+            sandboxTerminals.delete(sandboxId);
+          }
+          break;
+        }
+      }
+    })
   );
 
   // Update context for API key status
@@ -93,8 +113,26 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
         sandboxListProvider.refresh();
         fileTreeProvider.refresh();
 
+        // Add sandbox as a workspace folder
+        const sandboxUri = vscode.Uri.parse(`e2b://${sandboxId}/`);
+        const workspaceFolderIndex = (vscode.workspace.workspaceFolders?.length || 0);
+        const sandboxName = `E2B: ${sandboxId.substring(0, 12)}...`;
+
+        vscode.workspace.updateWorkspaceFolders(
+          workspaceFolderIndex,
+          0,
+          { uri: sandboxUri, name: sandboxName }
+        );
+
         // Automatically open terminal for this sandbox
         const terminal = createSandboxTerminal(sandboxId!);
+
+        // Track the terminal
+        if (!sandboxTerminals.has(sandboxId!)) {
+          sandboxTerminals.set(sandboxId!, []);
+        }
+        sandboxTerminals.get(sandboxId!)!.push(terminal);
+
         terminal.show();
 
         vscode.window.showInformationMessage(`Connected to sandbox: ${sandboxId}`);
@@ -134,6 +172,44 @@ async function disconnectCommand(item?: any): Promise<void> {
         return;
       }
       sandboxId = selected.label === 'All' ? undefined : selected.label;
+    }
+  }
+
+  // Close terminals before disconnecting
+  if (sandboxId) {
+    // Close terminals for specific sandbox
+    const terminals = sandboxTerminals.get(sandboxId);
+    if (terminals) {
+      terminals.forEach(terminal => terminal.dispose());
+      sandboxTerminals.delete(sandboxId);
+    }
+  } else {
+    // Close all terminals
+    for (const [id, terminals] of sandboxTerminals.entries()) {
+      terminals.forEach(terminal => terminal.dispose());
+    }
+    sandboxTerminals.clear();
+  }
+
+  // Remove workspace folder(s) before disconnecting
+  const workspaceFolders = vscode.workspace.workspaceFolders || [];
+  if (sandboxId) {
+    // Remove specific sandbox workspace folder
+    const folderIndex = workspaceFolders.findIndex(
+      folder => folder.uri.scheme === 'e2b' && folder.uri.authority === sandboxId
+    );
+    if (folderIndex !== -1) {
+      vscode.workspace.updateWorkspaceFolders(folderIndex, 1);
+    }
+  } else {
+    // Remove all E2B workspace folders
+    const e2bFolders = workspaceFolders
+      .map((folder, index) => ({ folder, index }))
+      .filter(({ folder }) => folder.uri.scheme === 'e2b')
+      .reverse(); // Remove from end to start to maintain indices
+
+    for (const { index } of e2bFolders) {
+      vscode.workspace.updateWorkspaceFolders(index, 1);
     }
   }
 
@@ -179,6 +255,13 @@ async function openTerminalCommand(item?: any): Promise<void> {
   }
 
   const terminal = createSandboxTerminal(sandboxId);
+
+  // Track the terminal
+  if (!sandboxTerminals.has(sandboxId)) {
+    sandboxTerminals.set(sandboxId, []);
+  }
+  sandboxTerminals.get(sandboxId)!.push(terminal);
+
   terminal.show();
 }
 
