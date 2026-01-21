@@ -111,10 +111,9 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
       try {
         await e2bClient.connect(sandboxId!);
         updateConnectedContext();
-        sandboxListProvider.refresh();
-        fileTreeProvider.refresh();
 
-        // Add sandbox as a workspace folder
+        // Add sandbox as a workspace folder BEFORE refreshing providers
+        // This ensures VSCode has initialized the workspace folder before UI tries to populate
         const sandboxUri = vscode.Uri.parse(`e2b://${sandboxId}/`);
         const workspaceFolderIndex = (vscode.workspace.workspaceFolders?.length || 0);
         const sandboxName = `E2B: ${sandboxId.substring(0, 12)}...`;
@@ -124,6 +123,14 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
           0,
           { uri: sandboxUri, name: sandboxName }
         );
+
+        // Small delay to allow VSCode to fully initialize the workspace folder
+        // This is especially important for the first connection
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Now refresh providers - workspace folder is ready
+        sandboxListProvider.refresh();
+        fileTreeProvider.refresh();
 
         // Automatically open terminal for this sandbox
         const terminal = createSandboxTerminal(sandboxId!);
@@ -150,9 +157,13 @@ async function disconnectCommand(item?: any): Promise<void> {
     return;
   }
 
-  // Get sandboxId from the item if provided (could be SandboxRootItem or FileItem)
+  // Get sandboxId from the item if provided (could be SandboxItem, SandboxRootItem, or FileItem)
   let sandboxId: string | undefined;
-  if (item?.sandboxId) {
+  if (item?.sandboxInfo?.sandboxId) {
+    // SandboxItem from sandbox list
+    sandboxId = item.sandboxInfo.sandboxId;
+  } else if (item?.sandboxId) {
+    // FileItem or SandboxRootItem
     sandboxId = item.sandboxId;
   }
 
