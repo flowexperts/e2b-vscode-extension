@@ -12,13 +12,12 @@ export class SandboxItem extends vscode.TreeItem {
     );
 
     this.description = sandboxInfo.templateId || '';
-    this.tooltip = `Sandbox: ${sandboxInfo.sandboxId}\nTemplate: ${sandboxInfo.templateId || 'N/A'}\nStarted: ${sandboxInfo.startedAt || 'N/A'}\nStatus: ${isConnected ? 'Connected' : 'Disconnected'}`;
-    this.contextValue = isConnected ? 'sandboxConnected' : 'sandbox';
+    this.tooltip = `Sandbox: ${sandboxInfo.sandboxId}\nTemplate: ${sandboxInfo.templateId || 'N/A'}\nStarted: ${sandboxInfo.startedAt || 'N/A'}`;
+    this.contextValue = 'sandbox';
 
     if (isConnected) {
-      // Use a check icon with green color to clearly indicate connection
-      this.iconPath = new vscode.ThemeIcon('check', new vscode.ThemeColor('testing.iconPassed'));
-      this.description = `${this.description} • Connected`;
+      this.iconPath = new vscode.ThemeIcon('vm-running', new vscode.ThemeColor('charts.green'));
+      this.description = `${this.description} (connected)`;
     } else {
       this.iconPath = new vscode.ThemeIcon('vm-outline');
     }
@@ -64,7 +63,7 @@ export class SandboxListProvider implements vscode.TreeDataProvider<SandboxItem>
 
       return filtered.map(sandbox => new SandboxItem(
         sandbox,
-        e2bClient.isConnectedToSandbox(sandbox.sandboxId)
+        e2bClient.sandboxId === sandbox.sandboxId
       ));
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to list sandboxes: ${error}`);
