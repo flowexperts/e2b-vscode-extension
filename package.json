@@ -1,0 +1,181 @@
+{
+  "name": "e2b-sandbox-explorer",
+  "displayName": "E2B Sandbox Explorer",
+  "description": "Connect to E2B sandboxes, browse files, and run commands",
+  "version": "0.0.1",
+  "publisher": "e2b",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onFileSystem:e2b",
+    "onView:e2bSandboxes"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "e2b-explorer",
+          "title": "E2B Sandboxes",
+          "icon": "$(cloud)"
+        }
+      ]
+    },
+    "views": {
+      "e2b-explorer": [
+        {
+          "id": "e2bSandboxes",
+          "name": "Sandboxes",
+          "icon": "$(cloud)",
+          "contextualTitle": "E2B Sandboxes"
+        },
+        {
+          "id": "e2bFiles",
+          "name": "Files",
+          "when": "e2b.connected"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "e2bSandboxes",
+        "contents": "No API key configured.\n[Set API Key](command:e2b.setApiKey)",
+        "when": "!e2b.hasApiKey"
+      },
+      {
+        "view": "e2bFiles",
+        "contents": "No sandbox connected.\nSelect a sandbox from the list above.",
+        "when": "!e2b.connected"
+      }
+    ],
+    "commands": [
+      {
+        "command": "e2b.setApiKey",
+        "title": "E2B: Set API Key"
+      },
+      {
+        "command": "e2b.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "e2b.connect",
+        "title": "Connect",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "e2b.disconnect",
+        "title": "E2B: Disconnect",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "e2b.openTerminal",
+        "title": "E2B: Open Terminal",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "e2b.openFile",
+        "title": "Open File"
+      },
+      {
+        "command": "e2b.newFile",
+        "title": "New File",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "e2b.newFolder",
+        "title": "New Folder",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "e2b.deleteItem",
+        "title": "Delete",
+        "icon": "$(trash)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "e2b.refresh",
+          "when": "view == e2bSandboxes",
+          "group": "navigation"
+        },
+        {
+          "command": "e2b.disconnect",
+          "when": "view == e2bFiles && e2b.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "e2b.openTerminal",
+          "when": "view == e2bFiles && e2b.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "e2b.newFile",
+          "when": "view == e2bFiles && e2b.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "e2b.newFolder",
+          "when": "view == e2bFiles && e2b.connected",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "e2b.connect",
+          "when": "view == e2bSandboxes && viewItem == sandbox",
+          "group": "inline"
+        },
+        {
+          "command": "e2b.openFile",
+          "when": "view == e2bFiles && viewItem == file",
+          "group": "navigation"
+        },
+        {
+          "command": "e2b.newFile",
+          "when": "view == e2bFiles && viewItem == directory",
+          "group": "1_new"
+        },
+        {
+          "command": "e2b.newFolder",
+          "when": "view == e2bFiles && viewItem == directory",
+          "group": "1_new"
+        },
+        {
+          "command": "e2b.deleteItem",
+          "when": "view == e2bFiles && viewItem =~ /file|directory/",
+          "group": "2_edit"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "E2B Sandbox Explorer",
+      "properties": {
+        "e2b.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "E2B API key. Falls back to E2B_API_KEY environment variable if not set."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "package": "bun run compile && vsce package"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/vscode": "^1.108.1",
+    "esbuild": "^0.27.2",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@e2b/code-interpreter": "^2.3.3"
+  }
+}
