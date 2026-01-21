@@ -117,9 +117,11 @@ export class E2BClient {
   async disconnect(sandboxId?: string): Promise<void> {
     if (sandboxId) {
       // Disconnect specific sandbox
-      this.connectedSandboxes.delete(sandboxId);
+      const sandbox = this.connectedSandboxes.get(sandboxId);
+      if (sandbox) {
+        this.connectedSandboxes.delete(sandboxId);
+      }
     } else {
-      // Disconnect all sandboxes
       this.connectedSandboxes.clear();
     }
   }

@@ -150,9 +150,13 @@ async function disconnectCommand(item?: any): Promise<void> {
     return;
   }
 
-  // Get sandboxId from the item if provided (could be SandboxRootItem or FileItem)
+  // Get sandboxId from the item if provided (could be SandboxItem, SandboxRootItem, or FileItem)
   let sandboxId: string | undefined;
-  if (item?.sandboxId) {
+  if (item?.sandboxInfo?.sandboxId) {
+    // SandboxItem from sandbox list
+    sandboxId = item.sandboxInfo.sandboxId;
+  } else if (item?.sandboxId) {
+    // FileItem or SandboxRootItem
     sandboxId = item.sandboxId;
   }
 
