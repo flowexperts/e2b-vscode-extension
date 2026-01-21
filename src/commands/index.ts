@@ -93,8 +93,8 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
         sandboxListProvider.refresh();
         fileTreeProvider.refresh();
 
-        // Automatically open terminal
-        const terminal = createSandboxTerminal();
+        // Automatically open terminal for this sandbox
+        const terminal = createSandboxTerminal(sandboxId!);
         terminal.show();
 
         vscode.window.showInformationMessage(`Connected to sandbox: ${sandboxId}`);
@@ -105,26 +105,80 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
   );
 }
 
-async function disconnectCommand(): Promise<void> {
+async function disconnectCommand(item?: any): Promise<void> {
   if (!e2bClient.isConnected) {
     vscode.window.showInformationMessage('Not connected to any sandbox');
     return;
   }
 
-  await e2bClient.disconnect();
+  // Get sandboxId from the item if provided (could be SandboxRootItem or FileItem)
+  let sandboxId: string | undefined;
+  if (item?.sandboxId) {
+    sandboxId = item.sandboxId;
+  }
+
+  if (!sandboxId) {
+    // If no specific sandbox, ask user or disconnect all
+    const connectedIds = e2bClient.getConnectedSandboxIds();
+    if (connectedIds.length === 1) {
+      sandboxId = connectedIds[0];
+    } else {
+      const options = [
+        ...connectedIds.map(id => ({ label: id, description: 'Disconnect this sandbox' })),
+        { label: 'All', description: 'Disconnect all sandboxes' },
+      ];
+      const selected = await vscode.window.showQuickPick(options, {
+        placeHolder: 'Select sandbox to disconnect',
+      });
+      if (!selected) {
+        return;
+      }
+      sandboxId = selected.label === 'All' ? undefined : selected.label;
+    }
+  }
+
+  await e2bClient.disconnect(sandboxId);
   updateConnectedContext();
   sandboxListProvider.refresh();
   fileTreeProvider.refresh();
-  vscode.window.showInformationMessage('Disconnected from sandbox');
+
+  if (sandboxId) {
+    vscode.window.showInformationMessage(`Disconnected from sandbox: ${sandboxId}`);
+  } else {
+    vscode.window.showInformationMessage('Disconnected from all sandboxes');
+  }
 }
 
-function openTerminalCommand(): void {
+async function openTerminalCommand(item?: any): Promise<void> {
   if (!e2bClient.isConnected) {
     vscode.window.showErrorMessage('Not connected to any sandbox');
     return;
   }
 
-  const terminal = createSandboxTerminal();
+  // Get sandboxId from item or ask user to select
+  let sandboxId: string;
+  if (item?.sandboxId) {
+    sandboxId = item.sandboxId;
+  } else {
+    const connectedIds = e2bClient.getConnectedSandboxIds();
+    if (connectedIds.length === 0) {
+      vscode.window.showErrorMessage('Not connected to any sandbox');
+      return;
+    }
+    if (connectedIds.length === 1) {
+      sandboxId = connectedIds[0];
+    } else {
+      const selected = await vscode.window.showQuickPick(connectedIds, {
+        placeHolder: 'Select sandbox to open terminal for',
+      });
+      if (!selected) {
+        return;
+      }
+      sandboxId = selected;
+    }
+  }
+
+  const terminal = createSandboxTerminal(sandboxId);
   terminal.show();
 }
 
@@ -133,7 +187,8 @@ async function openFileCommand(item?: FileItem): Promise<void> {
     return;
   }
 
-  const uri = vscode.Uri.parse(`e2b://${e2bClient.sandboxId}${item.fileInfo.path}`);
+  // Use the sandboxId from the FileItem
+  const uri = vscode.Uri.parse(`e2b://${item.sandboxId}${item.fileInfo.path}`);
   try {
     const doc = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(doc);
@@ -146,6 +201,29 @@ async function newFileCommand(item?: FileItem): Promise<void> {
   if (!e2bClient.isConnected) {
     vscode.window.showErrorMessage('Not connected to any sandbox');
     return;
+  }
+
+  // Get sandboxId from item or ask user to select
+  let sandboxId: string;
+  if (item?.sandboxId) {
+    sandboxId = item.sandboxId;
+  } else {
+    const connectedIds = e2bClient.getConnectedSandboxIds();
+    if (connectedIds.length === 0) {
+      vscode.window.showErrorMessage('Not connected to any sandbox');
+      return;
+    }
+    if (connectedIds.length === 1) {
+      sandboxId = connectedIds[0];
+    } else {
+      const selected = await vscode.window.showQuickPick(connectedIds, {
+        placeHolder: 'Select sandbox to create file in',
+      });
+      if (!selected) {
+        return;
+      }
+      sandboxId = selected;
+    }
   }
 
   const dirPath = item?.fileInfo.path || '/';
@@ -162,11 +240,11 @@ async function newFileCommand(item?: FileItem): Promise<void> {
   const filePath = path.posix.join(dirPath, fileName);
 
   try {
-    await e2bClient.writeFile(filePath, '');
+    await e2bClient.writeFile(filePath, '', sandboxId);
     fileTreeProvider.refresh();
 
     // Open the new file
-    const uri = vscode.Uri.parse(`e2b://${e2bClient.sandboxId}${filePath}`);
+    const uri = vscode.Uri.parse(`e2b://${sandboxId}${filePath}`);
     const doc = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(doc);
   } catch (error) {
@@ -178,6 +256,29 @@ async function newFolderCommand(item?: FileItem): Promise<void> {
   if (!e2bClient.isConnected) {
     vscode.window.showErrorMessage('Not connected to any sandbox');
     return;
+  }
+
+  // Get sandboxId from item or ask user to select
+  let sandboxId: string;
+  if (item?.sandboxId) {
+    sandboxId = item.sandboxId;
+  } else {
+    const connectedIds = e2bClient.getConnectedSandboxIds();
+    if (connectedIds.length === 0) {
+      vscode.window.showErrorMessage('Not connected to any sandbox');
+      return;
+    }
+    if (connectedIds.length === 1) {
+      sandboxId = connectedIds[0];
+    } else {
+      const selected = await vscode.window.showQuickPick(connectedIds, {
+        placeHolder: 'Select sandbox to create folder in',
+      });
+      if (!selected) {
+        return;
+      }
+      sandboxId = selected;
+    }
   }
 
   const dirPath = item?.fileInfo.path || '/';
@@ -194,7 +295,7 @@ async function newFolderCommand(item?: FileItem): Promise<void> {
   const folderPath = path.posix.join(dirPath, folderName);
 
   try {
-    await e2bClient.makeDirectory(folderPath);
+    await e2bClient.makeDirectory(folderPath, sandboxId);
     fileTreeProvider.refresh();
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to create folder: ${error}`);
@@ -217,7 +318,7 @@ async function deleteItemCommand(item?: FileItem): Promise<void> {
   }
 
   try {
-    await e2bClient.deleteFile(item.fileInfo.path);
+    await e2bClient.deleteFile(item.fileInfo.path, item.sandboxId);
     fileTreeProvider.refresh();
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to delete: ${error}`);

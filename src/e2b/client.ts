@@ -17,8 +17,7 @@ export interface SandboxInfo {
 
 export class E2BClient {
   private static instance: E2BClient;
-  private sandbox: Sandbox | null = null;
-  private _sandboxId: string | null = null;
+  private connectedSandboxes: Map<string, Sandbox> = new Map();
 
   private constructor() {}
 
@@ -30,11 +29,31 @@ export class E2BClient {
   }
 
   get isConnected(): boolean {
-    return this.sandbox !== null;
+    return this.connectedSandboxes.size > 0;
   }
 
   get sandboxId(): string | null {
-    return this._sandboxId;
+    // Return first sandbox ID for backwards compatibility
+    const ids = this.getConnectedSandboxIds();
+    return ids.length > 0 ? ids[0] : null;
+  }
+
+  getConnectedSandboxIds(): string[] {
+    return Array.from(this.connectedSandboxes.keys());
+  }
+
+  getSandbox(sandboxId?: string): Sandbox | null {
+    if (!sandboxId) {
+      // Return first sandbox for backwards compatibility
+      const ids = this.getConnectedSandboxIds();
+      if (ids.length === 0) return null;
+      return this.connectedSandboxes.get(ids[0]) || null;
+    }
+    return this.connectedSandboxes.get(sandboxId) || null;
+  }
+
+  isConnectedToSandbox(sandboxId: string): boolean {
+    return this.connectedSandboxes.has(sandboxId);
   }
 
   getApiKey(): string | undefined {
@@ -82,27 +101,36 @@ export class E2BClient {
       throw new Error('E2B API key not configured. Set it in settings or E2B_API_KEY environment variable.');
     }
 
+    // Don't connect if already connected
+    if (this.connectedSandboxes.has(sandboxId)) {
+      return;
+    }
+
     try {
-      this.sandbox = await Sandbox.connect(sandboxId, { apiKey });
-      this._sandboxId = sandboxId;
+      const sandbox = await Sandbox.connect(sandboxId, { apiKey });
+      this.connectedSandboxes.set(sandboxId, sandbox);
     } catch (error) {
-      this.sandbox = null;
-      this._sandboxId = null;
       throw error;
     }
   }
 
-  async disconnect(): Promise<void> {
-    this.sandbox = null;
-    this._sandboxId = null;
+  async disconnect(sandboxId?: string): Promise<void> {
+    if (sandboxId) {
+      // Disconnect specific sandbox
+      this.connectedSandboxes.delete(sandboxId);
+    } else {
+      // Disconnect all sandboxes
+      this.connectedSandboxes.clear();
+    }
   }
 
-  async listFiles(path: string): Promise<FileInfo[]> {
-    if (!this.sandbox) {
-      throw new Error('Not connected to sandbox');
+  async listFiles(path: string, sandboxId: string): Promise<FileInfo[]> {
+    const sandbox = this.connectedSandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Not connected to sandbox: ${sandboxId}`);
     }
 
-    const entries = await this.sandbox.files.list(path);
+    const entries = await sandbox.files.list(path);
     return entries.map((entry: any) => ({
       name: entry.name,
       path: entry.path,
@@ -110,46 +138,52 @@ export class E2BClient {
     }));
   }
 
-  async readFile(path: string): Promise<string> {
-    if (!this.sandbox) {
-      throw new Error('Not connected to sandbox');
+  async readFile(path: string, sandboxId: string): Promise<string> {
+    const sandbox = this.connectedSandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Not connected to sandbox: ${sandboxId}`);
     }
-    return await this.sandbox.files.read(path);
+    return await sandbox.files.read(path);
   }
 
-  async writeFile(path: string, content: string): Promise<void> {
-    if (!this.sandbox) {
-      throw new Error('Not connected to sandbox');
+  async writeFile(path: string, content: string, sandboxId: string): Promise<void> {
+    const sandbox = this.connectedSandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Not connected to sandbox: ${sandboxId}`);
     }
-    await this.sandbox.files.write(path, content);
+    await sandbox.files.write(path, content);
   }
 
-  async deleteFile(path: string): Promise<void> {
-    if (!this.sandbox) {
-      throw new Error('Not connected to sandbox');
+  async deleteFile(path: string, sandboxId: string): Promise<void> {
+    const sandbox = this.connectedSandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Not connected to sandbox: ${sandboxId}`);
     }
-    await this.sandbox.files.remove(path);
+    await sandbox.files.remove(path);
   }
 
-  async makeDirectory(path: string): Promise<void> {
-    if (!this.sandbox) {
-      throw new Error('Not connected to sandbox');
+  async makeDirectory(path: string, sandboxId: string): Promise<void> {
+    const sandbox = this.connectedSandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Not connected to sandbox: ${sandboxId}`);
     }
-    await this.sandbox.files.makeDir(path);
+    await sandbox.files.makeDir(path);
   }
 
-  async rename(oldPath: string, newPath: string): Promise<void> {
-    if (!this.sandbox) {
-      throw new Error('Not connected to sandbox');
+  async rename(oldPath: string, newPath: string, sandboxId: string): Promise<void> {
+    const sandbox = this.connectedSandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Not connected to sandbox: ${sandboxId}`);
     }
-    await this.sandbox.files.rename(oldPath, newPath);
+    await sandbox.files.rename(oldPath, newPath);
   }
 
-  async runCommand(command: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    if (!this.sandbox) {
-      throw new Error('Not connected to sandbox');
+  async runCommand(command: string, sandboxId: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    const sandbox = this.connectedSandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Not connected to sandbox: ${sandboxId}`);
     }
-    const result = await this.sandbox.commands.run(command);
+    const result = await sandbox.commands.run(command);
     return {
       stdout: result.stdout,
       stderr: result.stderr,
@@ -157,12 +191,13 @@ export class E2BClient {
     };
   }
 
-  async stat(path: string): Promise<{ isDir: boolean; size: number; mtime: number }> {
-    if (!this.sandbox) {
-      throw new Error('Not connected to sandbox');
+  async stat(path: string, sandboxId: string): Promise<{ isDir: boolean; size: number; mtime: number }> {
+    const sandbox = this.connectedSandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Not connected to sandbox: ${sandboxId}`);
     }
     // Use ls command to get file info since SDK may not have direct stat
-    const result = await this.sandbox.commands.run(`stat -c '%F %s %Y' "${path}" 2>/dev/null || stat -f '%HT %z %m' "${path}"`);
+    const result = await sandbox.commands.run(`stat -c '%F %s %Y' "${path}" 2>/dev/null || stat -f '%HT %z %m' "${path}"`);
     const parts = result.stdout.trim().split(' ');
     const isDir = parts[0]?.toLowerCase().includes('directory') || parts[0] === 'directory';
     return {
@@ -170,10 +205,6 @@ export class E2BClient {
       size: parseInt(parts[1] || '0', 10),
       mtime: parseInt(parts[2] || '0', 10) * 1000,
     };
-  }
-
-  getSandbox(): Sandbox | null {
-    return this.sandbox;
   }
 }
 

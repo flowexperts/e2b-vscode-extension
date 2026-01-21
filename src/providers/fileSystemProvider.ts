@@ -11,10 +11,15 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
+    const sandboxId = uri.authority;
     const path = uri.path || '/';
 
+    if (!sandboxId) {
+      throw vscode.FileSystemError.FileNotFound(uri);
+    }
+
     try {
-      const info = await e2bClient.stat(path);
+      const info = await e2bClient.stat(path, sandboxId);
       return {
         type: info.isDir ? vscode.FileType.Directory : vscode.FileType.File,
         ctime: info.mtime,
@@ -27,10 +32,15 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
+    const sandboxId = uri.authority;
     const path = uri.path || '/';
 
+    if (!sandboxId) {
+      throw vscode.FileSystemError.FileNotFound(uri);
+    }
+
     try {
-      const entries = await e2bClient.listFiles(path);
+      const entries = await e2bClient.listFiles(path, sandboxId);
       return entries.map(entry => [
         entry.name,
         entry.isDir ? vscode.FileType.Directory : vscode.FileType.File,
@@ -41,8 +51,14 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   async createDirectory(uri: vscode.Uri): Promise<void> {
+    const sandboxId = uri.authority;
+
+    if (!sandboxId) {
+      throw vscode.FileSystemError.Unavailable(uri);
+    }
+
     try {
-      await e2bClient.makeDirectory(uri.path);
+      await e2bClient.makeDirectory(uri.path, sandboxId);
       this._onDidChangeFile.fire([{ type: vscode.FileChangeType.Created, uri }]);
     } catch (error) {
       throw vscode.FileSystemError.Unavailable(uri);
@@ -50,8 +66,14 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   async readFile(uri: vscode.Uri): Promise<Uint8Array> {
+    const sandboxId = uri.authority;
+
+    if (!sandboxId) {
+      throw vscode.FileSystemError.FileNotFound(uri);
+    }
+
     try {
-      const content = await e2bClient.readFile(uri.path);
+      const content = await e2bClient.readFile(uri.path, sandboxId);
       return Buffer.from(content, 'utf-8');
     } catch (error) {
       throw vscode.FileSystemError.FileNotFound(uri);
@@ -59,9 +81,15 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   async writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean }): Promise<void> {
+    const sandboxId = uri.authority;
+
+    if (!sandboxId) {
+      throw vscode.FileSystemError.Unavailable(uri);
+    }
+
     try {
       const text = Buffer.from(content).toString('utf-8');
-      await e2bClient.writeFile(uri.path, text);
+      await e2bClient.writeFile(uri.path, text, sandboxId);
       this._onDidChangeFile.fire([{ type: vscode.FileChangeType.Changed, uri }]);
     } catch (error) {
       throw vscode.FileSystemError.Unavailable(uri);
@@ -69,8 +97,14 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   async delete(uri: vscode.Uri, options: { recursive: boolean }): Promise<void> {
+    const sandboxId = uri.authority;
+
+    if (!sandboxId) {
+      throw vscode.FileSystemError.Unavailable(uri);
+    }
+
     try {
-      await e2bClient.deleteFile(uri.path);
+      await e2bClient.deleteFile(uri.path, sandboxId);
       this._onDidChangeFile.fire([{ type: vscode.FileChangeType.Deleted, uri }]);
     } catch (error) {
       throw vscode.FileSystemError.Unavailable(uri);
@@ -78,8 +112,14 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   async rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): Promise<void> {
+    const sandboxId = oldUri.authority;
+
+    if (!sandboxId) {
+      throw vscode.FileSystemError.Unavailable(oldUri);
+    }
+
     try {
-      await e2bClient.rename(oldUri.path, newUri.path);
+      await e2bClient.rename(oldUri.path, newUri.path, sandboxId);
       this._onDidChangeFile.fire([
         { type: vscode.FileChangeType.Deleted, uri: oldUri },
         { type: vscode.FileChangeType.Created, uri: newUri },

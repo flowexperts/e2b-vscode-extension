@@ -14,6 +14,8 @@ export class SandboxTerminal implements vscode.Pseudoterminal {
   private ptyHandle: CommandHandle | null = null;
   private currentDimensions = { cols: 80, rows: 24 };
 
+  constructor(private readonly sandboxId: string) {}
+
   async open(initialDimensions: vscode.TerminalDimensions | undefined): Promise<void> {
     if (initialDimensions) {
       this.currentDimensions = {
@@ -22,14 +24,14 @@ export class SandboxTerminal implements vscode.Pseudoterminal {
       };
     }
 
-    if (!e2bClient.isConnected) {
+    if (!e2bClient.isConnectedToSandbox(this.sandboxId)) {
       this.writeEmitter.fire('\x1b[31mNot connected to sandbox\x1b[0m\r\n');
       this.closeEmitter.fire(1);
       return;
     }
 
     try {
-      const sandbox = e2bClient.getSandbox();
+      const sandbox = e2bClient.getSandbox(this.sandboxId);
       if (!sandbox) {
         this.writeEmitter.fire('\x1b[31mSandbox not available\x1b[0m\r\n');
         this.closeEmitter.fire(1);
@@ -69,7 +71,7 @@ export class SandboxTerminal implements vscode.Pseudoterminal {
     }
 
     try {
-      const sandbox = e2bClient.getSandbox();
+      const sandbox = e2bClient.getSandbox(this.sandboxId);
       if (!sandbox) {
         return;
       }
@@ -94,7 +96,7 @@ export class SandboxTerminal implements vscode.Pseudoterminal {
     }
 
     try {
-      const sandbox = e2bClient.getSandbox();
+      const sandbox = e2bClient.getSandbox(this.sandboxId);
       if (!sandbox) {
         return;
       }
@@ -106,10 +108,11 @@ export class SandboxTerminal implements vscode.Pseudoterminal {
   }
 }
 
-export function createSandboxTerminal(): vscode.Terminal {
-  const pty = new SandboxTerminal();
+export function createSandboxTerminal(sandboxId: string): vscode.Terminal {
+  const pty = new SandboxTerminal(sandboxId);
+  const shortId = sandboxId.substring(0, 12);
   return vscode.window.createTerminal({
-    name: `E2B: ${e2bClient.sandboxId || 'Sandbox'}`,
+    name: `E2B: ${shortId}...`,
     pty,
     isTransient: false,
   });
