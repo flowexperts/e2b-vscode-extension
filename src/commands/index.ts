@@ -19,6 +19,7 @@ export function registerCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('e2b.newFile', newFileCommand),
     vscode.commands.registerCommand('e2b.newFolder', newFolderCommand),
     vscode.commands.registerCommand('e2b.deleteItem', deleteItemCommand),
+    vscode.commands.registerCommand('e2b.searchFiles', searchFilesCommand),
   );
 
   // Track terminal closures to clean up our map
@@ -405,5 +406,92 @@ async function deleteItemCommand(item?: FileItem): Promise<void> {
     fileTreeProvider.refresh();
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to delete: ${error}`);
+  }
+}
+
+async function searchFilesCommand(): Promise<void> {
+  if (!e2bClient.isConnected) {
+    vscode.window.showErrorMessage('Not connected to any sandbox');
+    return;
+  }
+
+  // Get sandboxId - if multiple, ask user to select
+  const connectedIds = e2bClient.getConnectedSandboxIds();
+  if (connectedIds.length === 0) {
+    vscode.window.showErrorMessage('Not connected to any sandbox');
+    return;
+  }
+
+  let sandboxId: string;
+  if (connectedIds.length === 1) {
+    sandboxId = connectedIds[0];
+  } else {
+    const selected = await vscode.window.showQuickPick(connectedIds, {
+      placeHolder: 'Select sandbox to search files in',
+    });
+    if (!selected) {
+      return;
+    }
+    sandboxId = selected;
+  }
+
+  // Show progress while indexing files
+  const allFiles = await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: 'Indexing sandbox files...',
+      cancellable: false,
+    },
+    async () => {
+      const files: Array<{ path: string; name: string }> = [];
+
+      const scanDirectory = async (dirPath: string): Promise<void> => {
+        try {
+          const entries = await e2bClient.listFiles(dirPath, sandboxId);
+
+          for (const entry of entries) {
+            const fullPath = dirPath === '/' ? `/${entry.name}` : `${dirPath}/${entry.name}`;
+
+            if (entry.isDir) {
+              await scanDirectory(fullPath);
+            } else {
+              files.push({ path: fullPath, name: entry.name });
+            }
+          }
+        } catch (error) {
+          console.error(`Error scanning directory ${dirPath}:`, error);
+        }
+      };
+
+      await scanDirectory('/');
+      return files;
+    }
+  );
+
+  if (allFiles.length === 0) {
+    vscode.window.showInformationMessage('No files found in sandbox');
+    return;
+  }
+
+  // Show quick pick with all files
+  const items = allFiles.map(file => ({
+    label: file.name,
+    description: file.path,
+    path: file.path,
+  }));
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: `Search ${allFiles.length} files in sandbox ${sandboxId.substring(0, 12)}...`,
+    matchOnDescription: true,
+  });
+
+  if (selected) {
+    const uri = vscode.Uri.parse(`e2b://${sandboxId}${selected.path}`);
+    try {
+      const doc = await vscode.workspace.openTextDocument(uri);
+      await vscode.window.showTextDocument(doc);
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to open file: ${error}`);
+    }
   }
 }

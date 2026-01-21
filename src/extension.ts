@@ -12,6 +12,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.workspace.registerFileSystemProvider('e2b', e2bFileSystemProvider, {
       isCaseSensitive: true,
+      isReadonly: false,
     })
   );
 
