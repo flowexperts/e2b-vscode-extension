@@ -1,148 +1,108 @@
 import * as vscode from 'vscode';
 import { e2bClient } from '../e2b/client';
+import type { CommandHandle } from 'e2b';
 
 export class SandboxTerminal implements vscode.Pseudoterminal {
   private writeEmitter = new vscode.EventEmitter<string>();
   private closeEmitter = new vscode.EventEmitter<number>();
+  private setDimensionsEmitter = new vscode.EventEmitter<vscode.TerminalDimensions>();
 
   onDidWrite = this.writeEmitter.event;
   onDidClose = this.closeEmitter.event;
+  onDidChangeDimensions = this.setDimensionsEmitter.event;
 
-  private inputBuffer = '';
-  private currentDir = '/home/user';
+  private ptyHandle: CommandHandle | null = null;
+  private currentDimensions = { cols: 80, rows: 24 };
 
-  open(): void {
-    this.writeEmitter.fire('\x1b[1;34mE2B Sandbox Terminal\x1b[0m\r\n');
-    this.writeEmitter.fire(`Connected to sandbox: ${e2bClient.sandboxId}\r\n`);
-    this.writeEmitter.fire('\r\n');
-    this.showPrompt();
-  }
-
-  close(): void {
-    // Cleanup if needed
-  }
-
-  handleInput(data: string): void {
-    // Handle special characters
-    if (data === '\r') {
-      // Enter key
-      this.writeEmitter.fire('\r\n');
-      this.executeCommand(this.inputBuffer);
-      this.inputBuffer = '';
-    } else if (data === '\x7f') {
-      // Backspace
-      if (this.inputBuffer.length > 0) {
-        this.inputBuffer = this.inputBuffer.slice(0, -1);
-        this.writeEmitter.fire('\b \b');
-      }
-    } else if (data === '\x03') {
-      // Ctrl+C
-      this.writeEmitter.fire('^C\r\n');
-      this.inputBuffer = '';
-      this.showPrompt();
-    } else if (data === '\x04') {
-      // Ctrl+D
-      this.closeEmitter.fire(0);
-    } else {
-      // Regular character
-      this.inputBuffer += data;
-      this.writeEmitter.fire(data);
-    }
-  }
-
-  private showPrompt(): void {
-    const sandboxId = e2bClient.sandboxId || 'sandbox';
-    this.writeEmitter.fire(`\x1b[32m${sandboxId}\x1b[0m:\x1b[34m${this.currentDir}\x1b[0m$ `);
-  }
-
-  private async executeCommand(command: string): Promise<void> {
-    const trimmed = command.trim();
-
-    if (!trimmed) {
-      this.showPrompt();
-      return;
+  async open(initialDimensions: vscode.TerminalDimensions | undefined): Promise<void> {
+    if (initialDimensions) {
+      this.currentDimensions = {
+        cols: initialDimensions.columns,
+        rows: initialDimensions.rows,
+      };
     }
 
     if (!e2bClient.isConnected) {
       this.writeEmitter.fire('\x1b[31mNot connected to sandbox\x1b[0m\r\n');
-      this.showPrompt();
-      return;
-    }
-
-    // Handle cd command locally
-    if (trimmed.startsWith('cd ')) {
-      const newDir = trimmed.slice(3).trim();
-      await this.handleCd(newDir);
-      return;
-    }
-
-    if (trimmed === 'cd') {
-      this.currentDir = '/home/user';
-      this.showPrompt();
-      return;
-    }
-
-    // Handle exit command
-    if (trimmed === 'exit') {
-      this.closeEmitter.fire(0);
+      this.closeEmitter.fire(1);
       return;
     }
 
     try {
-      // Execute command in current directory
-      const fullCommand = `cd "${this.currentDir}" && ${trimmed}`;
-      const result = await e2bClient.runCommand(fullCommand);
-
-      if (result.stdout) {
-        // Convert newlines for terminal
-        const output = result.stdout.replace(/\n/g, '\r\n');
-        this.writeEmitter.fire(output);
-        if (!output.endsWith('\r\n')) {
-          this.writeEmitter.fire('\r\n');
-        }
+      const sandbox = e2bClient.getSandbox();
+      if (!sandbox) {
+        this.writeEmitter.fire('\x1b[31mSandbox not available\x1b[0m\r\n');
+        this.closeEmitter.fire(1);
+        return;
       }
 
-      if (result.stderr) {
-        const errOutput = result.stderr.replace(/\n/g, '\r\n');
-        this.writeEmitter.fire(`\x1b[31m${errOutput}\x1b[0m`);
-        if (!errOutput.endsWith('\r\n')) {
-          this.writeEmitter.fire('\r\n');
-        }
-      }
+      // Create PTY with bash shell
+      this.ptyHandle = await sandbox.pty.create({
+        cols: this.currentDimensions.cols,
+        rows: this.currentDimensions.rows,
+        onData: (data: Uint8Array) => {
+          // Convert binary data to string and send to terminal
+          const text = new TextDecoder().decode(data);
+          this.writeEmitter.fire(text);
+        },
+      });
     } catch (error) {
-      this.writeEmitter.fire(`\x1b[31mError: ${error}\x1b[0m\r\n`);
+      this.writeEmitter.fire(`\x1b[31mFailed to create PTY: ${error}\x1b[0m\r\n`);
+      this.closeEmitter.fire(1);
     }
-
-    this.showPrompt();
   }
 
-  private async handleCd(newDir: string): Promise<void> {
+  async close(): Promise<void> {
+    if (this.ptyHandle) {
+      try {
+        await this.ptyHandle.kill();
+      } catch (error) {
+        // Ignore errors on close
+      }
+      this.ptyHandle = null;
+    }
+  }
+
+  async handleInput(data: string): Promise<void> {
+    if (!this.ptyHandle) {
+      return;
+    }
+
     try {
-      // Resolve path
-      let targetDir: string;
-      if (newDir.startsWith('/')) {
-        targetDir = newDir;
-      } else if (newDir === '~') {
-        targetDir = '/home/user';
-      } else if (newDir.startsWith('~/')) {
-        targetDir = '/home/user' + newDir.slice(1);
-      } else {
-        targetDir = this.currentDir === '/'
-          ? '/' + newDir
-          : this.currentDir + '/' + newDir;
+      const sandbox = e2bClient.getSandbox();
+      if (!sandbox) {
+        return;
       }
 
-      // Normalize path
-      const result = await e2bClient.runCommand(`cd "${targetDir}" && pwd`);
-      if (result.exitCode === 0) {
-        this.currentDir = result.stdout.trim();
-      } else {
-        this.writeEmitter.fire(`\x1b[31mcd: ${newDir}: No such directory\x1b[0m\r\n`);
-      }
+      // Convert string to Uint8Array and send to PTY
+      const encoder = new TextEncoder();
+      const bytes = encoder.encode(data);
+      await sandbox.pty.sendInput(this.ptyHandle.pid, bytes);
     } catch (error) {
-      this.writeEmitter.fire(`\x1b[31mcd: ${newDir}: No such directory\x1b[0m\r\n`);
+      this.writeEmitter.fire(`\x1b[31mError sending input: ${error}\x1b[0m\r\n`);
     }
-    this.showPrompt();
+  }
+
+  async setDimensions(dimensions: vscode.TerminalDimensions): Promise<void> {
+    this.currentDimensions = {
+      cols: dimensions.columns,
+      rows: dimensions.rows,
+    };
+
+    if (!this.ptyHandle) {
+      return;
+    }
+
+    try {
+      const sandbox = e2bClient.getSandbox();
+      if (!sandbox) {
+        return;
+      }
+
+      await sandbox.pty.resize(this.ptyHandle.pid, this.currentDimensions);
+    } catch (error) {
+      // Ignore resize errors
+    }
   }
 }
 
@@ -151,5 +111,6 @@ export function createSandboxTerminal(): vscode.Terminal {
   return vscode.window.createTerminal({
     name: `E2B: ${e2bClient.sandboxId || 'Sandbox'}`,
     pty,
+    isTransient: false,
   });
 }
