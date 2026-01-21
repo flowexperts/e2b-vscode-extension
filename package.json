@@ -95,6 +95,11 @@
         "command": "e2b.deleteItem",
         "title": "Delete",
         "icon": "$(trash)"
+      },
+      {
+        "command": "e2b.searchFiles",
+        "title": "E2B: Search Files",
+        "icon": "$(search)"
       }
     ],
     "menus": {
@@ -102,6 +107,11 @@
         {
           "command": "e2b.refresh",
           "when": "view == e2bSandboxes",
+          "group": "navigation"
+        },
+        {
+          "command": "e2b.searchFiles",
+          "when": "view == e2bFiles && e2b.connected",
           "group": "navigation"
         },
         {
@@ -129,6 +139,11 @@
         {
           "command": "e2b.connect",
           "when": "view == e2bSandboxes && viewItem == sandbox",
+          "group": "inline"
+        },
+        {
+          "command": "e2b.disconnect",
+          "when": "view == e2bSandboxes && viewItem == sandboxConnected",
           "group": "inline"
         },
         {

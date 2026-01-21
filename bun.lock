@@ -6,13 +6,11 @@
       "name": "e2b-vscode",
       "dependencies": {
         "@e2b/code-interpreter": "^2.3.3",
-        "@types/vscode": "^1.108.1",
-        "esbuild": "^0.27.2",
       },
       "devDependencies": {
         "@types/bun": "latest",
-      },
-      "peerDependencies": {
+        "@types/vscode": "^1.108.1",
+        "esbuild": "^0.27.2",
         "typescript": "^5",
       },
     },

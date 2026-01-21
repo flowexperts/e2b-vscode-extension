@@ -112,9 +112,35 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
         await e2bClient.connect(sandboxId!);
         updateConnectedContext();
 
+        // Prompt for directory path with default value
+        const directoryPath = await vscode.window.showInputBox({
+          prompt: 'Enter directory path to open',
+          value: '/home/user',
+          placeHolder: '/home/user',
+          ignoreFocusOut: true,
+          validateInput: (value) => {
+            if (!value) {
+              return 'Directory path cannot be empty';
+            }
+            if (!value.startsWith('/')) {
+              return 'Directory path must start with /';
+            }
+            return null;
+          }
+        });
+
+        // If user cancels the prompt, disconnect and return
+        if (!directoryPath) {
+          await e2bClient.disconnect(sandboxId!);
+          updateConnectedContext();
+          return;
+        }
+
         // Add sandbox as a workspace folder BEFORE refreshing providers
         // This ensures VSCode has initialized the workspace folder before UI tries to populate
-        const sandboxUri = vscode.Uri.parse(`e2b://${sandboxId}/`);
+        // Remove trailing slash if present (unless it's just "/")
+        const normalizedPath = directoryPath === '/' ? '/' : directoryPath.replace(/\/$/, '');
+        const sandboxUri = vscode.Uri.parse(`e2b://${sandboxId}${normalizedPath}`);
         const workspaceFolderIndex = (vscode.workspace.workspaceFolders?.length || 0);
         const sandboxName = `E2B: ${sandboxId.substring(0, 12)}...`;
 
@@ -446,6 +472,19 @@ async function searchFilesCommand(): Promise<void> {
     sandboxId = selected;
   }
 
+  // Find the workspace folder for this sandbox to get the selected path
+  const workspaceFolders = vscode.workspace.workspaceFolders || [];
+  const sandboxWorkspaceFolder = workspaceFolders.find(
+    folder => folder.uri.scheme === 'e2b' && folder.uri.authority === sandboxId
+  );
+
+  // Extract the path from the workspace folder URI, or fall back to '/'
+  // URI format is: e2b://sandbox-id/path/to/directory
+  let startPath = '/';
+  if (sandboxWorkspaceFolder) {
+    startPath = sandboxWorkspaceFolder.uri.path || '/';
+  }
+
   // Show progress while indexing files
   const allFiles = await vscode.window.withProgress(
     {
@@ -474,7 +513,7 @@ async function searchFilesCommand(): Promise<void> {
         }
       };
 
-      await scanDirectory('/');
+      await scanDirectory(startPath);
       return files;
     }
   );

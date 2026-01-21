@@ -4,13 +4,14 @@ import { e2bClient, FileInfo } from '../e2b/client';
 export class SandboxRootItem extends vscode.TreeItem {
   constructor(
     public readonly sandboxId: string,
+    public readonly rootPath: string,
   ) {
     super(
       `Sandbox: ${sandboxId.substring(0, 12)}...`,
       vscode.TreeItemCollapsibleState.Expanded
     );
 
-    this.tooltip = `Connected to sandbox: ${sandboxId}`;
+    this.tooltip = `Connected to sandbox: ${sandboxId} (${rootPath})`;
     this.contextValue = 'sandboxRoot';
     this.iconPath = new vscode.ThemeIcon('cloud', new vscode.ThemeColor('charts.green'));
   }
@@ -69,12 +70,24 @@ export class FileTreeProvider implements vscode.TreeDataProvider<TreeItem> {
       // Root level: show all connected sandboxes
       if (!element) {
         const sandboxIds = e2bClient.getConnectedSandboxIds();
-        return sandboxIds.map(id => new SandboxRootItem(id));
+
+        // Get root path for each sandbox from workspace folders
+        return sandboxIds.map(id => {
+          const workspaceFolder = vscode.workspace.workspaceFolders?.find(
+            folder => folder.uri.scheme === 'e2b' && folder.uri.authority === id
+          );
+
+          // Extract path from URI (e.g., e2b://sandbox-id/home/user -> /home/user)
+          // If no workspace folder found, default to '/'
+          const rootPath = workspaceFolder?.uri.path || '/';
+
+          return new SandboxRootItem(id, rootPath);
+        });
       }
 
-      // Second level: show files for each sandbox
+      // Second level: show files for each sandbox (starting from the selected root path)
       if (element instanceof SandboxRootItem) {
-        const files = await e2bClient.listFiles('/', element.sandboxId);
+        const files = await e2bClient.listFiles(element.rootPath, element.sandboxId);
         return files
           .sort((a, b) => {
             if (a.isDir !== b.isDir) {
