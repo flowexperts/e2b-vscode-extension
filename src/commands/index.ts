@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { e2bClient } from '../e2b/client';
-import { sandboxListProvider, SandboxItem } from '../providers/sandboxListProvider';
+import { sandboxListProvider, sandboxDecorationProvider, SandboxItem } from '../providers/sandboxListProvider';
 import { fileTreeProvider, FileItem } from '../providers/fileTreeProvider';
 import { createSandboxTerminal } from '../terminal/sandboxTerminal';
 import * as path from 'path';
@@ -74,6 +74,7 @@ async function setApiKeyCommand(): Promise<void> {
 
 function refreshCommand(): void {
   sandboxListProvider.refresh();
+  sandboxDecorationProvider.refresh();
   if (e2bClient.isConnected) {
     fileTreeProvider.refresh();
   }
@@ -115,6 +116,10 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
         await e2bClient.connect(sandboxId!);
         updateConnectedContext();
 
+        // Refresh to show "configuring" state (yellow/orange with loading icon)
+        sandboxListProvider.refresh();
+        sandboxDecorationProvider.refresh();
+
         // Prompt for directory path with default value
         const directoryPath = await vscode.window.showInputBox({
           prompt: 'Enter directory path to open',
@@ -136,6 +141,8 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
         if (!directoryPath) {
           await e2bClient.disconnect(sandboxId!);
           updateConnectedContext();
+          sandboxListProvider.refresh();
+          sandboxDecorationProvider.refresh();
           return;
         }
 
@@ -147,6 +154,7 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
 
         // Refresh providers to show the connected sandbox
         sandboxListProvider.refresh();
+        sandboxDecorationProvider.refresh();
         fileTreeProvider.refresh();
 
         // Automatically open terminal for this sandbox
@@ -163,6 +171,8 @@ async function connectCommand(item?: SandboxItem): Promise<void> {
         vscode.window.showInformationMessage(`Connected to sandbox: ${sandboxId}`);
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to connect: ${error}`);
+        sandboxListProvider.refresh();
+        sandboxDecorationProvider.refresh();
       }
     }
   );
@@ -223,6 +233,7 @@ async function disconnectCommand(item?: any): Promise<void> {
   await e2bClient.disconnect(sandboxId);
   updateConnectedContext();
   sandboxListProvider.refresh();
+  sandboxDecorationProvider.refresh();
   fileTreeProvider.refresh();
 
   if (sandboxId) {

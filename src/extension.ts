@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { e2bFileSystemProvider } from './providers/fileSystemProvider';
-import { sandboxListProvider } from './providers/sandboxListProvider';
+import { sandboxListProvider, sandboxDecorationProvider } from './providers/sandboxListProvider';
 import { fileTreeProvider } from './providers/fileTreeProvider';
 import { registerCommands } from './commands';
 import { e2bClient } from './e2b/client';
@@ -14,6 +14,11 @@ export function activate(context: vscode.ExtensionContext): void {
       isCaseSensitive: true,
       isReadonly: false,
     })
+  );
+
+  // Register the sandbox decoration provider to color connected sandboxes
+  context.subscriptions.push(
+    vscode.window.registerFileDecorationProvider(sandboxDecorationProvider)
   );
 
   // Register the sandbox list tree view

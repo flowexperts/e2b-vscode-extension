@@ -65,6 +65,14 @@ export class E2BClient {
     return this.connectedSandboxes.has(sandboxId);
   }
 
+  isFullyConfigured(sandboxId: string): boolean {
+    return this.connectedSandboxes.has(sandboxId) && this.sandboxRootPaths.has(sandboxId);
+  }
+
+  hasRootPath(sandboxId: string): boolean {
+    return this.sandboxRootPaths.has(sandboxId);
+  }
+
   getRootPath(sandboxId: string): string {
     return this.sandboxRootPaths.get(sandboxId) || '/';
   }
