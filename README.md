@@ -41,6 +41,8 @@ First time setup:
 - Connect to multiple sandboxes simultaneously
 - Visual connection status indicators
 - Choose custom directory paths
+- Search and filter sandboxes by ID, name, or template
+- Copy sandbox IDs and template IDs to clipboard
 
 **How to connect:**
 1. Your running sandboxes appear in the **E2B Sandboxes** view
@@ -49,6 +51,12 @@ First time setup:
 4. The sandbox files will appear in the **Files** view
 
 ![Connect to Sandbox](assets/connect-and-pick-directory.png)
+
+**Sandbox Management:**
+- **Search/Filter**: Click the filter icon to search sandboxes by ID, name, or template
+- **Copy IDs**: Right-click any sandbox to copy its ID or template ID to clipboard
+
+![Copy Sandbox and Template IDs](assets/copy-ids.png)
 
 ---
 
@@ -109,6 +117,8 @@ Or press `Ctrl+Shift+P` (or `Cmd+Shift+P`) and type "Preferences: Open Settings 
 2. If cached results exist, choose to use them or refresh
 3. Files are indexed with progress tracking ("Indexing X / Y files")
 4. Use the fuzzy search picker to find and open files
+
+![File Search in Action](assets/search-sample.png)
 
 **Search automatically:**
 - Git repos: Uses `git ls-files` (respects `.gitignore`)
@@ -260,7 +270,13 @@ All commands are accessible via `Ctrl+Shift+P` (or `Cmd+Shift+P`):
 - **E2B: Disconnect** - Disconnect from sandbox(es)
 - **E2B: Open Terminal** - Open terminal in sandbox
 - **E2B: Search Files** - Search files in sandbox/directory
+- **E2B: Search Sandboxes** - Filter sandboxes by ID, name, or template
+- **E2B: Clear Sandbox Filter** - Remove active sandbox filter
 - **E2B: Refresh** - Refresh sandbox list
+
+Context menu commands (right-click):
+- **Copy Sandbox ID** - Copy sandbox ID to clipboard
+- **Copy Template ID** - Copy template ID to clipboard
 
 ## Development
 

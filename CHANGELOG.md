@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sandbox filtering/search by ID, name, or template
 - Icons in sandbox quickpick selection
 - Visual color indicators for sandbox connection status (connecting/connected)
+- Copy Sandbox ID and Copy Template ID context menu commands
 
 ### Changed
 - Refactored command structure for better maintainability
