@@ -15,7 +15,63 @@ The extension is already built and packaged! You can find it at:
 e2b-sandbox-explorer-0.1.0.vsix
 ```
 
-## Option 1: Manual Installation (For Testing)
+## Publishing Methods
+
+There are three ways to publish this extension:
+
+1. **Automated Publishing via GitHub Actions (Recommended)** - Push a version tag and let CI/CD handle the rest
+2. **Manual Installation (For Testing)** - Install locally to test before publishing
+3. **Manual Publishing to Marketplace** - Manually publish using vsce CLI
+
+## Option 1: Automated Publishing (Recommended)
+
+The repository includes a GitHub Actions workflow that automatically publishes the extension when you push a version tag.
+
+### Prerequisites
+
+1. **Set up the VSCE_PAT secret** (one-time setup):
+   - Follow Steps 1-3 in "Option 3: Manual Publishing" below to create your publisher account and Personal Access Token
+   - Go to your GitHub repository Settings > Secrets and variables > Actions
+   - Click "New repository secret"
+   - Name: `VSCE_PAT`
+   - Value: Paste your Personal Access Token
+   - Click "Add secret"
+
+### Publishing a New Version
+
+1. **Update version** in `package.json`:
+   ```json
+   {
+     "version": "0.1.4"
+   }
+   ```
+
+2. **Update CHANGELOG.md** with release notes
+
+3. **Commit and push to main**:
+   ```bash
+   git add package.json CHANGELOG.md
+   git commit -m "chore: bump version to 0.1.4"
+   git push origin main
+   ```
+
+4. **Create and push version tag**:
+   ```bash
+   git tag v0.1.4
+   git push origin v0.1.4
+   ```
+
+5. **Monitor the workflow**:
+   - Go to the "Actions" tab in your GitHub repository
+   - The workflow will automatically:
+     - Validate the build
+     - Check version matches tag
+     - Publish to VS Code Marketplace
+     - Create a GitHub release with .vsix file
+
+**Note:** See [.github/workflows/README.md](.github/workflows/README.md) for detailed workflow documentation.
+
+## Option 2: Manual Installation (For Testing)
 
 Before publishing to the marketplace, you can test the extension locally:
 
@@ -35,7 +91,7 @@ Before publishing to the marketplace, you can test the extension locally:
    - Open the E2B Sandboxes view
    - Verify all features work correctly
 
-## Option 2: Publish to VS Code Marketplace
+## Option 3: Manual Publishing to VS Code Marketplace
 
 ### Step 1: Create a Publisher Account
 
@@ -115,7 +171,13 @@ The extension will be uploaded and reviewed. It typically appears in the marketp
 
 ## Updating the Extension
 
-When you make changes and want to publish an update:
+### Using Automated Publishing (Recommended)
+
+Follow the steps in "Option 1: Automated Publishing" above - just update the version, commit, and push a new tag.
+
+### Using Manual Publishing
+
+When you make changes and want to manually publish an update:
 
 1. **Make your changes** to the code
 
