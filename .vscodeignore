@@ -1,0 +1,25 @@
+# Development files
+.vscode/**
+.vscode-test/**
+.claude/**
+.cursor/**
+src/**
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/.eslintrc.json
+**/*.map
+**/*.ts
+
+# Build artifacts
+bun.lock
+node_modules/**
+
+# Documentation (internal)
+CLAUDE.md
+next-steps.txt
+
+# Git
+.git/**
+.github/**

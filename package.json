@@ -1,11 +1,31 @@
 {
   "name": "e2b-sandbox-explorer",
   "displayName": "E2B Sandbox Explorer",
-  "description": "Connect to E2B sandboxes, browse files, and run commands",
-  "version": "0.0.1",
-  "publisher": "e2b",
+  "description": "Connect to E2B sandboxes, browse files, and run commands directly from VS Code",
+  "version": "0.1.2",
+  "publisher": "bhavaniravi",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flowexperts/e2b-vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/flowexperts/e2b-vscode-extension/issues"
+  },
+  "homepage": "https://e2b.dev",
+  "keywords": [
+    "e2b",
+    "sandbox",
+    "remote",
+    "cloud",
+    "development",
+    "terminal",
+    "file explorer",
+    "remote development"
+  ],
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.108.0"
   },
   "categories": [
     "Other"
@@ -248,6 +268,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/vscode": "^1.108.1",
+    "@vscode/vsce": "^3.7.1",
     "esbuild": "^0.27.2",
     "typescript": "^5"
   },
