@@ -20,6 +20,8 @@ export function registerCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('e2b.newFolder', newFolderCommand),
     vscode.commands.registerCommand('e2b.deleteItem', deleteItemCommand),
     vscode.commands.registerCommand('e2b.searchFiles', searchFilesCommand),
+    vscode.commands.registerCommand('e2b.searchSandboxes', searchSandboxesCommand),
+    vscode.commands.registerCommand('e2b.clearSandboxFilter', clearSandboxFilterCommand),
   );
 
   // Track terminal closures to clean up our map
@@ -676,4 +678,23 @@ async function searchFilesCommand(item?: any): Promise<void> {
       vscode.window.showErrorMessage(`Failed to open file: ${error}`);
     }
   }
+}
+
+async function searchSandboxesCommand(): Promise<void> {
+  const searchText = await vscode.window.showInputBox({
+    prompt: 'Search sandboxes by ID, name, or template',
+    placeHolder: 'Enter search text...',
+  });
+
+  if (searchText === undefined) {
+    // User cancelled
+    return;
+  }
+
+  // Apply filter
+  sandboxListProvider.setFilter(searchText);
+}
+
+function clearSandboxFilterCommand(): void {
+  sandboxListProvider.clearFilter();
 }

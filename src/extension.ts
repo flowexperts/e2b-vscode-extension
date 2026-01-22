@@ -36,6 +36,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Set initial context
   vscode.commands.executeCommand('setContext', 'e2b.hasApiKey', e2bClient.hasApiKey());
   vscode.commands.executeCommand('setContext', 'e2b.connected', false);
+  vscode.commands.executeCommand('setContext', 'e2b.sandboxListFiltered', false);
 }
 
 export function deactivate(): void {

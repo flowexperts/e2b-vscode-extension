@@ -11,7 +11,8 @@ export class SandboxItem extends vscode.TreeItem {
       vscode.TreeItemCollapsibleState.None
     );
 
-    this.description = sandboxInfo.templateId || '';
+    this.description = sandboxInfo.sandboxId
+
     this.tooltip = `Sandbox: ${sandboxInfo.sandboxId}\nTemplate: ${sandboxInfo.templateId || 'N/A'}\nStarted: ${sandboxInfo.startedAt || 'N/A'}\nStatus: ${isConnected ? 'Connected' : 'Disconnected'}`;
     this.contextValue = isConnected ? 'sandboxConnected' : 'sandbox';
 
@@ -39,6 +40,21 @@ export class SandboxListProvider implements vscode.TreeDataProvider<SandboxItem>
   setFilter(text: string): void {
     this.filterText = text.toLowerCase();
     this._onDidChangeTreeData.fire();
+    this.updateFilterContext();
+  }
+
+  clearFilter(): void {
+    this.filterText = '';
+    this._onDidChangeTreeData.fire();
+    this.updateFilterContext();
+  }
+
+  isFiltered(): boolean {
+    return this.filterText.length > 0;
+  }
+
+  private updateFilterContext(): void {
+    vscode.commands.executeCommand('setContext', 'e2b.sandboxListFiltered', this.isFiltered());
   }
 
   getTreeItem(element: SandboxItem): vscode.TreeItem {

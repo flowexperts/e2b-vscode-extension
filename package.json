@@ -120,10 +120,30 @@
         "command": "e2b.searchFiles",
         "title": "E2B: Search Files",
         "icon": "$(search)"
+      },
+      {
+        "command": "e2b.searchSandboxes",
+        "title": "E2B: Search Sandboxes",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "e2b.clearSandboxFilter",
+        "title": "E2B: Clear Sandbox Filter",
+        "icon": "$(clear-all)"
       }
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "e2b.clearSandboxFilter",
+          "when": "view == e2bSandboxes && e2b.sandboxListFiltered",
+          "group": "navigation"
+        },
+        {
+          "command": "e2b.searchSandboxes",
+          "when": "view == e2bSandboxes",
+          "group": "navigation"
+        },
         {
           "command": "e2b.refresh",
           "when": "view == e2bSandboxes",
