@@ -5,6 +5,7 @@ import { connectCommand, disconnectCommand, setupTerminalTracking } from './conn
 import { openTerminalCommand } from './terminal';
 import { openFileCommand, newFileCommand, newFolderCommand, deleteItemCommand, renameItemCommand } from './fileOperations';
 import { searchFilesCommand, searchSandboxesCommand, clearSandboxFilterCommand } from './search';
+import { copySandboxIdCommand, copyTemplateIdCommand } from './clipboard';
 
 export function registerCommands(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
@@ -21,6 +22,8 @@ export function registerCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('e2b.searchFiles', searchFilesCommand),
     vscode.commands.registerCommand('e2b.searchSandboxes', searchSandboxesCommand),
     vscode.commands.registerCommand('e2b.clearSandboxFilter', clearSandboxFilterCommand),
+    vscode.commands.registerCommand('e2b.copySandboxId', copySandboxIdCommand),
+    vscode.commands.registerCommand('e2b.copyTemplateId', copyTemplateIdCommand),
   );
 
   // Setup terminal tracking

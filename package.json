@@ -135,6 +135,16 @@
         "command": "e2b.clearSandboxFilter",
         "title": "E2B: Clear Sandbox Filter",
         "icon": "$(clear-all)"
+      },
+      {
+        "command": "e2b.copySandboxId",
+        "title": "Copy Sandbox ID",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "e2b.copyTemplateId",
+        "title": "Copy Template ID",
+        "icon": "$(copy)"
       }
     ],
     "menus": {
@@ -190,6 +200,16 @@
           "command": "e2b.disconnect",
           "when": "view == e2bSandboxes && viewItem == sandboxConnected",
           "group": "inline"
+        },
+        {
+          "command": "e2b.copySandboxId",
+          "when": "view == e2bSandboxes && viewItem =~ /sandbox/",
+          "group": "4_copy"
+        },
+        {
+          "command": "e2b.copyTemplateId",
+          "when": "view == e2bSandboxes && viewItem =~ /sandbox/",
+          "group": "4_copy"
         },
         {
           "command": "e2b.openFile",
