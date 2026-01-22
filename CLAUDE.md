@@ -57,7 +57,7 @@ On activation:
 - Fires file change events to keep VSCode's UI in sync
 
 **Tree View Providers**
-- `SandboxListProvider`: Lists all available sandboxes from E2B API, shows connection status
+- `SandboxListProvider`: Lists all available sandboxes from E2B API, shows connection status, supports filtering by sandbox ID/name/template
 - `FileTreeProvider`: Hierarchical view of files in connected sandboxes, supports multi-sandbox connections
 
 **Terminal Integration (src/terminal/sandboxTerminal.ts)**
@@ -105,12 +105,14 @@ On activation:
 **Context Variables:**
 - `e2b.hasApiKey`: Controls whether "Set API Key" welcome view is shown
 - `e2b.connected`: Controls visibility of file operations and terminal buttons
+- `e2b.sandboxListFiltered`: Controls visibility of "Clear Filter" button in sandbox list
 
 **Conditional UI (package.json):**
 - Sandbox list shows when API key is set
 - Files view shows when connected
 - Commands appear in context menus based on item type (file vs directory vs sandboxRoot)
 - Search icon appears inline on sandboxes and directories (not in global toolbar)
+- Clear Filter button appears only when sandbox list is filtered
 
 **Activity Bar Integration:**
 - All file browsing happens in custom E2B activity bar views
@@ -177,6 +179,14 @@ The extension uses `@e2b/code-interpreter` (v2.3.3) which provides:
 **Tree View Sorting:**
 - Directories listed before files
 - Alphabetical within each group
+
+**Sandbox List Filtering:**
+- `SandboxListProvider.setFilter(text)`: Filter sandboxes by ID, name, or template (case-insensitive)
+- `SandboxListProvider.clearFilter()`: Remove active filter
+- `SandboxListProvider.isFiltered()`: Check if filter is active
+- Filtering updates `e2b.sandboxListFiltered` context variable
+- Sandbox IDs are displayed in the description field for easy identification
+- Commands: `e2b.searchSandboxes` (search/filter), `e2b.clearSandboxFilter` (clear filter)
 
 ## Testing
 
