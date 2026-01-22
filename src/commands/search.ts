@@ -237,6 +237,8 @@ export async function searchFilesCommand(item?: any): Promise<void> {
   const items = allFiles.map(file => ({
     label: file.name,
     description: file.path,
+    iconPath: vscode.ThemeIcon.File,
+    resourceUri: vscode.Uri.parse(`e2b://${sandboxId}${file.path}`),
     path: file.path,
   }));
 
