@@ -110,11 +110,6 @@
           "group": "navigation"
         },
         {
-          "command": "e2b.searchFiles",
-          "when": "view == e2bFiles && e2b.connected",
-          "group": "navigation"
-        },
-        {
           "command": "e2b.disconnect",
           "when": "view == e2bFiles && e2b.connected",
           "group": "navigation"
@@ -165,6 +160,21 @@
           "command": "e2b.deleteItem",
           "when": "view == e2bFiles && viewItem =~ /file|directory/",
           "group": "2_edit"
+        },
+        {
+          "command": "e2b.searchFiles",
+          "when": "view == e2bFiles && viewItem == sandboxRoot",
+          "group": "inline"
+        },
+        {
+          "command": "e2b.searchFiles",
+          "when": "view == e2bFiles && viewItem == directory",
+          "group": "inline@1"
+        },
+        {
+          "command": "e2b.searchFiles",
+          "when": "view == e2bFiles && viewItem =~ /directory|sandboxRoot/",
+          "group": "3_search"
         }
       ]
     },

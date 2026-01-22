@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:e2b.dev)"
+      "WebFetch(domain:e2b.dev)",
+      "Bash(bun run compile:*)"
     ]
   }
 }

@@ -59,6 +59,7 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
 
     try {
       await e2bClient.makeDirectory(uri.path, sandboxId);
+      e2bClient.invalidateFileIndexCache(sandboxId, uri.path);
       this._onDidChangeFile.fire([{ type: vscode.FileChangeType.Created, uri }]);
     } catch (error) {
       throw vscode.FileSystemError.Unavailable(uri);
@@ -90,6 +91,10 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
     try {
       const text = Buffer.from(content).toString('utf-8');
       await e2bClient.writeFile(uri.path, text, sandboxId);
+      // Invalidate cache if this is a new file creation
+      if (options.create) {
+        e2bClient.invalidateFileIndexCache(sandboxId, uri.path);
+      }
       this._onDidChangeFile.fire([{ type: vscode.FileChangeType.Changed, uri }]);
     } catch (error) {
       throw vscode.FileSystemError.Unavailable(uri);
@@ -105,6 +110,7 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
 
     try {
       await e2bClient.deleteFile(uri.path, sandboxId);
+      e2bClient.invalidateFileIndexCache(sandboxId, uri.path);
       this._onDidChangeFile.fire([{ type: vscode.FileChangeType.Deleted, uri }]);
     } catch (error) {
       throw vscode.FileSystemError.Unavailable(uri);
@@ -120,6 +126,8 @@ export class E2BFileSystemProvider implements vscode.FileSystemProvider {
 
     try {
       await e2bClient.rename(oldUri.path, newUri.path, sandboxId);
+      e2bClient.invalidateFileIndexCache(sandboxId, oldUri.path);
+      e2bClient.invalidateFileIndexCache(sandboxId, newUri.path);
       this._onDidChangeFile.fire([
         { type: vscode.FileChangeType.Deleted, uri: oldUri },
         { type: vscode.FileChangeType.Created, uri: newUri },

@@ -71,16 +71,9 @@ export class FileTreeProvider implements vscode.TreeDataProvider<TreeItem> {
       if (!element) {
         const sandboxIds = e2bClient.getConnectedSandboxIds();
 
-        // Get root path for each sandbox from workspace folders
+        // Get root path for each sandbox from stored paths
         return sandboxIds.map(id => {
-          const workspaceFolder = vscode.workspace.workspaceFolders?.find(
-            folder => folder.uri.scheme === 'e2b' && folder.uri.authority === id
-          );
-
-          // Extract path from URI (e.g., e2b://sandbox-id/home/user -> /home/user)
-          // If no workspace folder found, default to '/'
-          const rootPath = workspaceFolder?.uri.path || '/';
-
+          const rootPath = e2bClient.getRootPath(id);
           return new SandboxRootItem(id, rootPath);
         });
       }

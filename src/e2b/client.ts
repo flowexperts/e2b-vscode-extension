@@ -15,9 +15,18 @@ export interface SandboxInfo {
   startedAt?: string;
 }
 
+export interface FileIndexCache {
+  files: Array<{ path: string; name: string }>;
+  timestamp: number;
+  path: string;
+  useGit: boolean;
+}
+
 export class E2BClient {
   private static instance: E2BClient;
   private connectedSandboxes: Map<string, Sandbox> = new Map();
+  private sandboxRootPaths: Map<string, string> = new Map();
+  private fileIndexCache: Map<string, FileIndexCache> = new Map();
 
   private constructor() {}
 
@@ -54,6 +63,71 @@ export class E2BClient {
 
   isConnectedToSandbox(sandboxId: string): boolean {
     return this.connectedSandboxes.has(sandboxId);
+  }
+
+  getRootPath(sandboxId: string): string {
+    return this.sandboxRootPaths.get(sandboxId) || '/';
+  }
+
+  setRootPath(sandboxId: string, rootPath: string): void {
+    this.sandboxRootPaths.set(sandboxId, rootPath);
+  }
+
+  // File index cache methods
+  private getCacheKey(sandboxId: string, path: string): string {
+    return `${sandboxId}:${path}`;
+  }
+
+  getFileIndexCache(sandboxId: string, path: string): FileIndexCache | undefined {
+    const key = this.getCacheKey(sandboxId, path);
+    const cache = this.fileIndexCache.get(key);
+
+    // Return cache if it's less than 5 minutes old
+    if (cache && Date.now() - cache.timestamp < 5 * 60 * 1000) {
+      return cache;
+    }
+
+    // Remove stale cache
+    if (cache) {
+      this.fileIndexCache.delete(key);
+    }
+
+    return undefined;
+  }
+
+  setFileIndexCache(sandboxId: string, path: string, files: Array<{ path: string; name: string }>, useGit: boolean): void {
+    const key = this.getCacheKey(sandboxId, path);
+    this.fileIndexCache.set(key, {
+      files,
+      timestamp: Date.now(),
+      path,
+      useGit
+    });
+  }
+
+  invalidateFileIndexCache(sandboxId: string, path?: string): void {
+    if (path) {
+      // Invalidate cache for this specific path and all parent paths
+      const key = this.getCacheKey(sandboxId, path);
+      this.fileIndexCache.delete(key);
+
+      // Invalidate parent directories
+      let currentPath = path;
+      while (currentPath !== '/' && currentPath.length > 0) {
+        currentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/';
+        const parentKey = this.getCacheKey(sandboxId, currentPath);
+        this.fileIndexCache.delete(parentKey);
+      }
+    } else {
+      // Invalidate all cache for this sandbox
+      const keysToDelete: string[] = [];
+      for (const key of this.fileIndexCache.keys()) {
+        if (key.startsWith(`${sandboxId}:`)) {
+          keysToDelete.push(key);
+        }
+      }
+      keysToDelete.forEach(key => this.fileIndexCache.delete(key));
+    }
   }
 
   getApiKey(): string | undefined {
@@ -120,9 +194,13 @@ export class E2BClient {
       const sandbox = this.connectedSandboxes.get(sandboxId);
       if (sandbox) {
         this.connectedSandboxes.delete(sandboxId);
+        this.sandboxRootPaths.delete(sandboxId);
+        this.invalidateFileIndexCache(sandboxId);
       }
     } else {
       this.connectedSandboxes.clear();
+      this.sandboxRootPaths.clear();
+      this.fileIndexCache.clear();
     }
   }
 
