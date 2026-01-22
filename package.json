@@ -21,7 +21,7 @@
         {
           "id": "e2b-explorer",
           "title": "E2B Sandboxes",
-          "icon": "$(cloud)"
+          "icon": "./icon.svg"
         }
       ]
     },
