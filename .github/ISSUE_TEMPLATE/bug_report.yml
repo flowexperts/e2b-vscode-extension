@@ -1,0 +1,108 @@
+name: Bug Report
+description: Report a bug or issue with the E2B Sandbox Explorer extension
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us investigate.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: When I try to connect to a sandbox, the extension crashes...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Open VS Code
+        2. Click on E2B icon in activity bar
+        3. Click "Connect" on a sandbox
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: The extension should connect to the sandbox successfully.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: An error message appears and the connection fails.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: |
+        Please provide any error messages or logs. You can find these in:
+        - VS Code Developer Tools: Help > Toggle Developer Tools > Console
+        - Output panel: View > Output > Select "E2B Sandbox Explorer"
+      placeholder: Paste error messages or logs here...
+      render: shell
+
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension Version
+      description: Which version of E2B Sandbox Explorer are you using?
+      placeholder: "0.1.3"
+    validations:
+      required: true
+
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code Version
+      description: Which version of VS Code are you using?
+      placeholder: "1.85.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: Which OS are you using?
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (screenshots, workarounds, etc.)
+      placeholder: I noticed this only happens when...
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues to make sure this is not a duplicate
+          required: true
+        - label: I have provided all required information above
+          required: true

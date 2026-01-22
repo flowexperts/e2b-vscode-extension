@@ -2,7 +2,7 @@
   "name": "e2b-sandbox-explorer",
   "displayName": "E2B Sandbox Explorer",
   "description": "Connect to E2B sandboxes, browse files, and run commands directly from VS Code",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "bhavaniravi",
   "license": "MIT",
   "icon": "icon.png",

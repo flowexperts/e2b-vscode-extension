@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: E2B Documentation
+    url: https://e2b.dev/docs
+    about: Official E2B documentation and guides
+  - name: VS Code Extension API
+    url: https://code.visualstudio.com/api
+    about: Reference for VS Code extension development
+  - name: GitHub Discussions
+    url: https://github.com/flowexperts/e2b-vscode-extension/discussions
+    about: Ask questions and discuss ideas with the community
