@@ -184,7 +184,58 @@
         "e2b.apiKey": {
           "type": "string",
           "default": "",
-          "description": "E2B API key. Falls back to E2B_API_KEY environment variable if not set."
+          "description": "E2B API key. Falls back to E2B_API_KEY environment variable if not set.",
+          "order": 1
+        },
+        "e2b.searchIgnorePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".local",
+            ".npm",
+            ".pnpm-store",
+            "node_modules",
+            ".next",
+            ".nuxt",
+            "dist",
+            "build",
+            "out",
+            ".cache",
+            ".parcel-cache",
+            ".turbo",
+            "coverage",
+            "__pycache__",
+            ".venv",
+            "venv",
+            "env",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".tox",
+            ".hypothesis",
+            "*.egg-info",
+            ".eggs",
+            "target",
+            "vendor",
+            ".gradle",
+            ".mvn",
+            ".bundle",
+            ".git",
+            ".svn",
+            ".hg",
+            ".idea",
+            ".vscode",
+            ".vs",
+            ".DS_Store",
+            "Thumbs.db",
+            "tmp",
+            "temp",
+            ".tmp",
+            ".temp"
+          ],
+          "description": "File and directory patterns to ignore during file search (when not using git). These patterns are passed to the 'find' command with -prune.",
+          "order": 2
         }
       }
     }

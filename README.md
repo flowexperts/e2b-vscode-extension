@@ -120,9 +120,41 @@ Search for files within a sandbox or directory:
 
 ### Settings
 
-Access via: `Preferences > Settings > Extensions > E2B Sandbox Explorer`
+Access via: **Preferences > Settings > Extensions > E2B Sandbox Explorer**
 
-- **e2b.apiKey**: Your E2B API key (optional, can use environment variable)
+Or press `Ctrl+Shift+P` (or `Cmd+Shift+P`) and type "Preferences: Open Settings (UI)", then search for "E2B".
+
+#### Available Settings
+
+**`e2b.apiKey`** (string)
+- Your E2B API key
+- Optional - falls back to `E2B_API_KEY` environment variable if not set
+- Can be updated anytime through the Settings UI or command palette
+
+**`e2b.searchIgnorePatterns`** (array of strings)
+- File and directory patterns to ignore during file search (when not using git)
+- Default includes common patterns for all major languages/frameworks
+- Customize to add project-specific patterns or remove defaults
+- Only applies to non-git directories (git repos always respect `.gitignore`)
+
+#### Configuring in settings.json
+
+Advanced users can edit `settings.json` directly:
+
+```json
+{
+  "e2b.apiKey": "your-api-key-here",
+  "e2b.searchIgnorePatterns": [
+    "node_modules",
+    "dist",
+    "build",
+    "__pycache__",
+    ".git",
+    "my-custom-build-dir",
+    "*.tmp"
+  ]
+}
+```
 
 ### Environment Variables
 
@@ -130,11 +162,13 @@ Access via: `Preferences > Settings > Extensions > E2B Sandbox Explorer`
 
 ## File Search Ignore Patterns
 
-The extension automatically ignores common dependency and build directories:
+The extension automatically ignores common dependency and build directories during file search. These patterns are **fully customizable** via the `e2b.searchIgnorePatterns` setting.
 
-**JavaScript/TypeScript:** `node_modules`, `.next`, `.nuxt`, `dist`, `build`, `out`, `coverage`
+### Default Ignore Patterns
 
-**Python:** `__pycache__`, `venv`, `.venv`, `env`, `.pytest_cache`, `.mypy_cache`, `*.egg-info`
+**JavaScript/TypeScript:** `node_modules`, `.next`, `.nuxt`, `dist`, `build`, `out`, `.cache`, `.parcel-cache`, `.turbo`, `coverage`, `.npm`, `.pnpm-store`, `.local`
+
+**Python:** `__pycache__`, `venv`, `.venv`, `env`, `.pytest_cache`, `.mypy_cache`, `.tox`, `.hypothesis`, `*.egg-info`, `.eggs`
 
 **Rust:** `target`
 
@@ -150,9 +184,29 @@ The extension automatically ignores common dependency and build directories:
 
 **IDEs:** `.idea`, `.vscode`, `.vs`
 
-**Other:** `.DS_Store`, `Thumbs.db`, `tmp`, `temp`
+**Other:** `.DS_Store`, `Thumbs.db`, `tmp`, `temp`, `.tmp`, `.temp`
 
-In git repositories, `.gitignore` rules take precedence.
+**Note:** In git repositories, `.gitignore` rules always take precedence over these patterns.
+
+### Customizing Ignore Patterns
+
+1. Open VS Code Settings (`Ctrl+,` or `Cmd+,`)
+2. Search for "E2B Search Ignore Patterns"
+3. Click "Edit in settings.json" to modify the array
+4. Add or remove patterns as needed
+
+Example: Add custom build directories for your project:
+```json
+{
+  "e2b.searchIgnorePatterns": [
+    "node_modules",
+    "dist",
+    "my-custom-output",
+    "generated-files",
+    "*.log"
+  ]
+}
+```
 
 ## Commands
 

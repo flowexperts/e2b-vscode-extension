@@ -501,62 +501,11 @@ async function searchFilesCommand(item?: any): Promise<void> {
     allFiles = await indexFiles(sandboxId, startPath);
   }
 
-  // Build find command with common ignore patterns
+  // Build find command with ignore patterns from configuration
   function buildFindCommandWithIgnores(startPath: string, fileType: 'f' | 'd' = 'f'): string {
-    // Common directories to ignore across languages
-    const ignorePatterns = [
-      // JavaScript/TypeScript
-      '.local',
-      '.npm',
-      '.pnpm-store',
-      'node_modules',
-      '.next',
-      '.nuxt',
-      'dist',
-      'build',
-      'out',
-      '.cache',
-      '.parcel-cache',
-      '.turbo',
-      'coverage',
-      // Python
-      '__pycache__',
-      '.venv',
-      'venv',
-      'env',
-      '.pytest_cache',
-      '.mypy_cache',
-      '.tox',
-      '.hypothesis',
-      '*.egg-info',
-      '.eggs',
-      // Rust
-      'target',
-      // Go
-      'vendor',
-      // Java/Kotlin
-      '.gradle',
-      '.mvn',
-      // Ruby
-      '.bundle',
-      // PHP
-      'vendor',
-      // General VCS and IDE
-      '.git',
-      '.svn',
-      '.hg',
-      '.idea',
-      '.vscode',
-      '.vs',
-      // OS files
-      '.DS_Store',
-      'Thumbs.db',
-      // Build outputs
-      'tmp',
-      'temp',
-      '.tmp',
-      '.temp'
-    ];
+    // Get ignore patterns from configuration
+    const config = vscode.workspace.getConfiguration('e2b');
+    const ignorePatterns = config.get<string[]>('searchIgnorePatterns') || [];
 
     // Build prune conditions
     const pruneConditions = ignorePatterns
