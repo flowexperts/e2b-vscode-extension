@@ -19,6 +19,7 @@ export function registerCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('e2b.newFile', newFileCommand),
     vscode.commands.registerCommand('e2b.newFolder', newFolderCommand),
     vscode.commands.registerCommand('e2b.deleteItem', deleteItemCommand),
+    vscode.commands.registerCommand('e2b.renameItem', renameItemCommand),
     vscode.commands.registerCommand('e2b.searchFiles', searchFilesCommand),
     vscode.commands.registerCommand('e2b.searchSandboxes', searchSandboxesCommand),
     vscode.commands.registerCommand('e2b.clearSandboxFilter', clearSandboxFilterCommand),
@@ -423,6 +424,47 @@ async function deleteItemCommand(item?: FileItem): Promise<void> {
     fileTreeProvider.refresh();
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to delete: ${error}`);
+  }
+}
+
+async function renameItemCommand(item?: FileItem): Promise<void> {
+  if (!item) {
+    return;
+  }
+
+  const newName = await vscode.window.showInputBox({
+    prompt: 'Enter new name',
+    value: item.fileInfo.name,
+    placeHolder: item.fileInfo.name,
+    validateInput: (value) => {
+      if (!value || value.trim() === '') {
+        return 'Name cannot be empty';
+      }
+      if (value.includes('/')) {
+        return 'Name cannot contain "/"';
+      }
+      return null;
+    }
+  });
+
+  if (!newName || newName === item.fileInfo.name) {
+    return;
+  }
+
+  const directory = item.fileInfo.path.substring(0, item.fileInfo.path.lastIndexOf('/')) || '/';
+  const newPath = directory === '/' ? `/${newName}` : `${directory}/${newName}`;
+
+  try {
+    await e2bClient.rename(item.fileInfo.path, newPath, item.sandboxId);
+
+    // Invalidate file index cache for both old and new paths
+    e2bClient.invalidateFileIndexCache(item.sandboxId, item.fileInfo.path);
+    e2bClient.invalidateFileIndexCache(item.sandboxId, newPath);
+
+    fileTreeProvider.refresh();
+    vscode.window.showInformationMessage(`Renamed to "${newName}"`);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to rename: ${error}`);
   }
 }
 

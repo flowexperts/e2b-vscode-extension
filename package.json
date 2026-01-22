@@ -117,6 +117,11 @@
         "icon": "$(trash)"
       },
       {
+        "command": "e2b.renameItem",
+        "title": "Rename",
+        "icon": "$(edit)"
+      },
+      {
         "command": "e2b.searchFiles",
         "title": "E2B: Search Files",
         "icon": "$(search)"
@@ -147,6 +152,11 @@
         {
           "command": "e2b.refresh",
           "when": "view == e2bSandboxes",
+          "group": "navigation"
+        },
+        {
+          "command": "e2b.refresh",
+          "when": "view == e2bFiles && e2b.connected",
           "group": "navigation"
         },
         {
@@ -197,6 +207,11 @@
           "group": "1_new"
         },
         {
+          "command": "e2b.renameItem",
+          "when": "view == e2bFiles && viewItem =~ /file|directory/",
+          "group": "2_edit"
+        },
+        {
           "command": "e2b.deleteItem",
           "when": "view == e2bFiles && viewItem =~ /file|directory/",
           "group": "2_edit"
@@ -240,7 +255,6 @@
             ".next",
             ".nuxt",
             "dist",
-            "build",
             "out",
             ".cache",
             ".parcel-cache",
